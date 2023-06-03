@@ -248,6 +248,10 @@ class ConfigurationTests: SwiftLintTestCase {
         func isFile(atPath path: String) -> Bool {
             path.hasSuffix(".swift")
         }
+
+        func isDirectory(atPath path: String) -> Bool {
+            path == "directory" || path == "directory/excluded"
+        }
     }
 
     func testExcludedPaths() {
@@ -324,6 +328,15 @@ class ConfigurationTests: SwiftLintTestCase {
         XCTAssertEqual(Set(expectedFilenames), Set(filenames))
     }
 
+    func testLintablePathsWithDirectory() {
+        let paths = Configuration.default.lintablePaths(
+            inPath: Mock.Dir.level1, forceExclude: false, excludeBy: .prefix
+        )
+        let filenames = paths.map { $0.bridge().lastPathComponent }.sorted()
+        let expectedFilenames = ["Level1.swift", "Level2.swift", "Level3.swift"]
+        XCTAssertEqual(Set(expectedFilenames), Set(filenames))
+    }
+
     func testGlobIncludePaths() {
         FileManager.default.changeCurrentDirectoryPath(Mock.Dir.level0)
         let configuration = Configuration(includedPaths: ["**/Level2"])
@@ -331,8 +344,17 @@ class ConfigurationTests: SwiftLintTestCase {
                                                 forceExclude: true,
                                                 excludeBy: .paths(excludedPaths: configuration.excludedPaths))
         let filenames = paths.map { $0.bridge().lastPathComponent }.sorted()
-        let expectedFilenames = ["Level2.swift", "Level3.swift"]
+        let expectedFilenames = [
+            "DirectoryLevel1.swift",
+            "Level0.swift",
+            "Level1.swift",
+            "Level2.swift",
+            "Level3.swift",
+            "Main.swift",
+            "Sub.swift"
+        ].sorted()
 
+        // Because a directory was passed, we should ignore the configuration
         XCTAssertEqual(Set(expectedFilenames), Set(filenames))
     }
 
@@ -433,8 +455,15 @@ extension ConfigurationTests {
         let paths = configuration.lintablePaths(inPath: Mock.Dir.level0,
                                                 forceExclude: false,
                                                 excludeBy: .prefix)
-        let filenames = paths.map { $0.bridge().lastPathComponent }
-        XCTAssertEqual(filenames, ["Level2.swift"])
+        let filenames = paths.map { $0.bridge().lastPathComponent }.sorted()
+        let expectedFilenames = [
+            "DirectoryLevel1.swift",
+            "Level0.swift",
+            "Level2.swift",
+            "Main.swift",
+            "Sub.swift"
+        ].sorted()
+        XCTAssertEqual(filenames, expectedFilenames)
     }
 
     func testExcludeByPrefixForceExcludesFile() {

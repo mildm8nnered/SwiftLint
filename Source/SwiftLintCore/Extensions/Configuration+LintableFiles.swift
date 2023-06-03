@@ -38,30 +38,39 @@ extension Configuration {
         excludeBy: ExcludeBy,
         fileManager: LintableFileManager = FileManager.default
     ) -> [String] {
+        func excludePaths(from includedPaths: [String]) -> [String] {
+            switch excludeBy {
+            case .prefix:
+                return filterExcludedPathsByPrefix(in: includedPaths)
+            case .paths(let excludedPaths):
+                return filterExcludedPaths(excludedPaths, in: includedPaths)
+            }
+        }
+
+        if path.isEmpty {
+            var pathsForPath = includedPaths
+            if pathsForPath.isEmpty {
+                pathsForPath = fileManager.filesToLint(inPath: path, rootDirectory: nil)
+            }
+            let includedPaths = pathsForPath
+                .flatMap(Glob.resolveGlob)
+                .parallelFlatMap { fileManager.filesToLint(inPath: $0, rootDirectory: rootDirectory) }
+            return excludePaths(from: includedPaths)
+        }
+
         if fileManager.isFile(atPath: path) {
             if forceExclude {
-                switch excludeBy {
-                case .prefix:
-                    return filterExcludedPathsByPrefix(in: [path.absolutePathStandardized()])
-                case .paths(let excludedPaths):
-                    return filterExcludedPaths(excludedPaths, in: [path.absolutePathStandardized()])
-                }
+                return excludePaths(from: [path.absolutePathStandardized()])
             }
             // If path is a file and we're not forcing excludes, skip filtering with excluded/included paths
             return [path]
         }
 
-        let pathsForPath = includedPaths.isEmpty ? fileManager.filesToLint(inPath: path, rootDirectory: nil) : []
-        let includedPaths = self.includedPaths
-            .flatMap(Glob.resolveGlob)
-            .parallelFlatMap { fileManager.filesToLint(inPath: $0, rootDirectory: rootDirectory) }
-
-        switch excludeBy {
-        case .prefix:
-            return filterExcludedPathsByPrefix(in: pathsForPath, includedPaths)
-        case .paths(let excludedPaths):
-            return filterExcludedPaths(excludedPaths, in: pathsForPath, includedPaths)
+        if fileManager.isDirectory(atPath: path) {
+            let pathsForPath = fileManager.filesToLint(inPath: path, rootDirectory: nil)
+            return excludePaths(from: pathsForPath)
         }
+        return []
     }
 
     /// Returns an array of file paths after removing the excluded paths as defined by this configuration.

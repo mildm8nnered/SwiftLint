@@ -74,12 +74,20 @@ public extension String {
     }
 
     var isFile: Bool {
+        exists(isDirectory: false)
+    }
+
+    var isDirectory: Bool {
+        exists(isDirectory: true)
+    }
+
+    private func exists(isDirectory: Bool) -> Bool {
         if self.isEmpty {
             return false
         }
         var isDirectoryObjC: ObjCBool = false
         if FileManager.default.fileExists(atPath: self, isDirectory: &isDirectoryObjC) {
-            return !isDirectoryObjC.boolValue
+            return isDirectoryObjC.boolValue == isDirectory
         }
         return false
     }
