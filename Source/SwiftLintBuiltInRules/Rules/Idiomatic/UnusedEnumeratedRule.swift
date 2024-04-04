@@ -168,7 +168,7 @@ private extension UnusedEnumeratedRule {
                 return
             }
             defer { closures.removeLast() }
-            
+
             guard (closure.zeroPosition != nil) != (closure.onePosition != nil) else {
                 return
             }
@@ -186,7 +186,7 @@ private extension UnusedEnumeratedRule {
                 } else {
                     closure.zeroPosition = node.positionAfterSkippingLeadingTrivia
                 }
-            } else if node.baseName.text == "$1" {
+            } else {
                 closure.onePosition = node.positionAfterSkippingLeadingTrivia
             }
             closures[closures.count - 1] = closure
