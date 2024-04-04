@@ -22,7 +22,13 @@ struct UnusedEnumeratedRule: Rule {
             Example("list.enumerated().map { idx, elem in \"\\(idx): \\(elem)\" }"),
             Example("list.enumerated().map { $0 + $1 }"),
             Example("list.enumerated().something().map { _, elem in elem }"),
-            Example("list.map { ($0.offset, $0.element) }")
+            Example("list.map { ($0.offset, $0.element) }"),
+            Example("""
+            list.enumerated().map {
+                $1.enumerated().forEach { print($0, $1) }
+                return $0
+            }
+            """)
         ],
         triggeringExamples: [
             Example("for (↓_, foo) in bar.enumerated() { }"),
@@ -32,16 +38,51 @@ struct UnusedEnumeratedRule: Rule {
             Example("list.enumerated().map { idx, ↓_ in idx }"),
             Example("list.enumerated().map { ↓_, elem in elem }"),
             Example("list.enumerated().forEach { print(↓$0) }"),
-            Example("list.enumerated().map { ↓$1 }")
+            Example("list.enumerated().map { ↓$1 }"),
+            Example("""
+            list.enumerated().map {
+                $1.enumerated().forEach { print(↓$1) }
+                return $0
+            }
+            """),
+            Example("""
+            list.enumerated().map {
+                ↓$1.enumerated().forEach { print($0, $1) }
+                return 1
+            }
+            """),
+            Example("""
+            list.enumerated().map {
+                list.enumerated().forEach { print($0, $1) }
+                return ↓$0
+            }
+            """),
+            Example("""
+            list.enumerated().map {
+                $1.enumerated().forEach {
+                    print($0, $1)
+                     $1.enumerated().forEach {
+                         print(↓$1)
+                     }
+                }
+                return $0
+            }
+            """)
+
         ]
     )
 }
 
 private extension UnusedEnumeratedRule {
+    private struct Closure {
+        var trailingClosure: ClosureExprSyntax?
+        var zeroPosition: AbsolutePosition?
+        var onePosition: AbsolutePosition?
+    }
+
     final class Visitor: ViolationsSyntaxVisitor<ConfigurationType> {
-        private var trailingClosure: ClosureExprSyntax?
-        private var zeroPosition: AbsolutePosition?
-        private var onePosition: AbsolutePosition?
+        private var nextClosure: ClosureExprSyntax?
+        private var closures: [Closure] = []
 
         override func visitPost(_ node: ForStmtSyntax) {
             guard let tuplePattern = node.pattern.as(TuplePatternSyntax.self),
@@ -95,41 +136,49 @@ private extension UnusedEnumeratedRule {
                     onePosition: firstTokenIsUnderscore ? nil : secondElement.positionAfterSkippingLeadingTrivia
                 )
             } else {
-                self.trailingClosure = trailingClosure
+                nextClosure = trailingClosure
             }
 
             return .visitChildren
         }
 
+        override func visit(_ node: ClosureExprSyntax) -> SyntaxVisitorContinueKind {
+            if node == nextClosure {
+                let state = Closure(trailingClosure: node)
+                closures.append(state)
+                nextClosure = nil
+            }
+            return .visitChildren
+        }
+
         override func visitPost(_ node: ClosureExprSyntax) {
-            guard node == trailingClosure else {
+            guard node == closures.last?.trailingClosure else {
                 return
             }
             defer {
-                trailingClosure = nil
-                zeroPosition = nil
-                onePosition = nil
+                closures.removeLast()
             }
-            guard (zeroPosition != nil) != (onePosition != nil) else {
+            guard (closures.last?.zeroPosition != nil) != (closures.last?.onePosition != nil) else {
                 return
             }
 
-            addViolation(zeroPosition: zeroPosition, onePosition: onePosition)
+            addViolation(zeroPosition: closures.last?.zeroPosition, onePosition: closures.last?.onePosition)
         }
 
         override func visitPost(_ node: DeclReferenceExprSyntax) {
-            guard trailingClosure != nil else {
+            guard closures.last?.trailingClosure != nil, var closure = closures.last else {
                 return
             }
             if node.baseName.text == "$0" {
                 if node.parent?.as(MemberAccessExprSyntax.self)?.declName.baseName.text == "element" {
-                    onePosition = node.positionAfterSkippingLeadingTrivia
+                    closure.onePosition = node.positionAfterSkippingLeadingTrivia
                 } else {
-                    zeroPosition = node.positionAfterSkippingLeadingTrivia
+                    closure.zeroPosition = node.positionAfterSkippingLeadingTrivia
                 }
             } else if node.baseName.text == "$1" {
-                onePosition = node.positionAfterSkippingLeadingTrivia
+                closure.onePosition = node.positionAfterSkippingLeadingTrivia
             }
+            closures[closures.count - 1] = closure
         }
 
         private func addViolation(zeroPosition: AbsolutePosition?, onePosition: AbsolutePosition?) {
