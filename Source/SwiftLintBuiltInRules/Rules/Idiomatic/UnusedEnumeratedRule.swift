@@ -67,15 +67,28 @@ struct UnusedEnumeratedRule: Rule {
                 }
                 return $0
             }
+            """),
+            Example("""
+            list.enumerated().map {
+                $1.enumerated().filter {
+                    print($0, $1)
+                    $1.enumerated().forEach {
+                         if ↓$1 == 2 {
+                             return true
+                         }
+                    }
+                    return false
+                }
+                return $0
+            }
             """)
-
         ]
     )
 }
 
 private extension UnusedEnumeratedRule {
     private struct Closure {
-        var trailingClosure: ClosureExprSyntax?
+        var closure: ClosureExprSyntax
         var zeroPosition: AbsolutePosition?
         var onePosition: AbsolutePosition?
     }
@@ -144,29 +157,27 @@ private extension UnusedEnumeratedRule {
 
         override func visit(_ node: ClosureExprSyntax) -> SyntaxVisitorContinueKind {
             if node == nextClosure {
-                let state = Closure(trailingClosure: node)
-                closures.append(state)
+                closures.append(Closure(closure: node))
                 nextClosure = nil
             }
             return .visitChildren
         }
 
         override func visitPost(_ node: ClosureExprSyntax) {
-            guard node == closures.last?.trailingClosure else {
+            guard let closure = closures.last, node == closure.closure else {
                 return
             }
-            defer {
-                closures.removeLast()
-            }
-            guard (closures.last?.zeroPosition != nil) != (closures.last?.onePosition != nil) else {
+            defer { closures.removeLast() }
+            
+            guard (closure.zeroPosition != nil) != (closure.onePosition != nil) else {
                 return
             }
 
-            addViolation(zeroPosition: closures.last?.zeroPosition, onePosition: closures.last?.onePosition)
+            addViolation(zeroPosition: closure.zeroPosition, onePosition: closure.onePosition)
         }
 
         override func visitPost(_ node: DeclReferenceExprSyntax) {
-            guard closures.last?.trailingClosure != nil, var closure = closures.last else {
+            guard var closure = closures.last, node.baseName.text == "$0" || node.baseName.text == "$1" else {
                 return
             }
             if node.baseName.text == "$0" {
