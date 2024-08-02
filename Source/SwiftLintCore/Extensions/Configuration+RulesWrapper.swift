@@ -13,8 +13,13 @@ internal extension Configuration {
         private var validRuleIdentifiers: Set<String> {
             let regularRuleIdentifiers = allRulesWrapped.map { type(of: $0.rule).description.identifier }
             let configurationCustomRulesIdentifiers =
-                (allRulesWrapped.first { $0.rule is CustomRules }?.rule as? CustomRules)?.customRuleIdentifiers ?? []
-            return Set(regularRuleIdentifiers + configurationCustomRulesIdentifiers)
+                (allRulesWrapped.first { $0.rule is CustomRules }?.rule as? CustomRules)?
+                    .configuration.customRuleConfigurations.map(\.identifier) ?? []
+            return Set(
+                regularRuleIdentifiers 
+                + configurationCustomRulesIdentifiers
+                + [RuleIdentifier.all.stringRepresentation]
+            )
         }
 
         private var cachedResultingRules: [any Rule]?
@@ -246,7 +251,7 @@ internal extension Configuration {
                         as? CustomRules {
                         onlyRules = onlyRules.union(
                             Set(
-                                childCustomRulesRule.customRuleIdentifiers
+                                childCustomRulesRule.configuration.customRuleConfigurations.map(\.identifier)
                             )
                         )
                     }
