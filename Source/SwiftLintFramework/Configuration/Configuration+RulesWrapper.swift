@@ -7,16 +7,16 @@ internal extension Configuration {
         private static let isOptInRuleCacheLock = NSLock()
 
         let allRulesWrapped: [ConfigurationRuleWrapper]
-        internal let mode: RulesMode
+        let mode: RulesMode
+        var customRuleIdentifiers: [String] {
+            (allRulesWrapped.first { $0.rule is CustomRules }?.rule as? CustomRules)?.customRuleIdentifiers ?? []
+        }
         private let aliasResolver: (String) -> String
 
         private var invalidRuleIdsWarnedAbout: Set<String> = []
-        private var customRulesIdentifiers: Set<String> {
-            Set(allRulesWrapped.customRules?.customRuleIdentifiers ?? [])
-        }
         private var validRuleIdentifiers: Set<String> {
             let regularRuleIdentifiers = allRulesWrapped.map { type(of: $0.rule).identifier }
-            return Set(regularRuleIdentifiers + customRulesIdentifiers)
+            return Set(regularRuleIdentifiers + customRuleIdentifiers)
         }
 
         private var cachedResultingRules: [any Rule]?
@@ -46,11 +46,6 @@ internal extension Configuration {
                 resultingRules = allRulesWrapped.filter { tuple in
                     onlyRulesRuleIdentifiers.contains(type(of: tuple.rule).identifier)
                 }.map(\.rule)
-                if !resultingRules.contains(where: { $0 is CustomRules }),
-                   !customRulesIdentifiers.isDisjoint(with: onlyRulesRuleIdentifiers),
-                   let customRules = allRulesWrapped.customRules {
-                    resultingRules.append(customRules)
-                }
 
             case var .defaultConfiguration(disabledRuleIdentifiers, optInRuleIdentifiers):
                 customRulesFilter = { !disabledRuleIdentifiers.contains($0.identifier) }
@@ -206,8 +201,10 @@ internal extension Configuration {
             newAllRulesWrapped: [ConfigurationRuleWrapper], with child: RulesWrapper
         ) -> [ConfigurationRuleWrapper] {
             guard
-                let parentCustomRulesRule = allRulesWrapped.customRules,
-                let childCustomRulesRule = child.allRulesWrapped.customRules
+                let parentCustomRulesRule = (allRulesWrapped.first { $0.rule is CustomRules })?.rule
+                    as? CustomRules,
+                let childCustomRulesRule = (child.allRulesWrapped.first { $0.rule is CustomRules })?.rule
+                    as? CustomRules
             else {
                 // Merging is only needed if both parent & child have a custom rules rule
                 return newAllRulesWrapped
@@ -255,7 +252,8 @@ internal extension Configuration {
                 // Also add identifiers of child custom rules iff the custom_rules rule is enabled
                 // (parent custom rules are already added)
                 if (onlyRules.contains { $0 == CustomRules.identifier }) {
-                    if let childCustomRulesRule = child.allRulesWrapped.customRules {
+                    if let childCustomRulesRule = (child.allRulesWrapped.first { $0.rule is CustomRules })?.rule
+                        as? CustomRules {
                         onlyRules = onlyRules.union(
                             Set(
                                 childCustomRulesRule.customRuleIdentifiers
@@ -311,11 +309,5 @@ internal extension Configuration {
             }
             return isOptInRule
         }
-    }
-}
-
-extension [ConfigurationRuleWrapper] {
-    var customRules: CustomRules? {
-        first { $0.rule is CustomRules }?.rule as? CustomRules
     }
 }
