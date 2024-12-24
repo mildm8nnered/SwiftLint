@@ -3,7 +3,6 @@ import Darwin
 #endif
 import Foundation
 import SourceKittenFramework
-import SwiftDiagnostics
 import SwiftIDEUtils
 import SwiftOperators
 import SwiftParser
@@ -43,27 +42,30 @@ private let commandsCache = Cache { file -> [Command] in
     return CommandVisitor(locationConverter: file.locationConverter)
         .walk(file: file, handler: \.commands)
 }
+private let regionsCache = Cache { file -> [Region] in
+    file.regions()
+}
 private let syntaxMapCache = Cache { file in
     responseCache.get(file).map { SwiftLintSyntaxMap(value: SyntaxMap(sourceKitResponse: $0)) }
 }
 private let syntaxClassificationsCache = Cache { $0.syntaxTree.classifications }
+private let syntaxKindsByLinesCache = Cache { $0.syntaxKindsByLine() }
+private let syntaxTokensByLinesCache = Cache { $0.syntaxTokensByLine() }
 private let linesWithTokensCache = Cache { $0.computeLinesWithTokens() }
 private let swiftSyntaxTokensCache = Cache { file -> [SwiftLintSyntaxToken]? in
     // Use SwiftSyntaxKindBridge to derive SourceKitten-compatible tokens from SwiftSyntax
     SwiftSyntaxKindBridge.sourceKittenSyntaxKinds(for: file)
 }
-private let commentLinesCache = Cache { CommentLinesVisitor.commentLines(in: $0) }
-private let emptyLinesCache = Cache { EmptyLinesVisitor.emptyLines(in: $0) }
 
 package typealias AssertHandler = () -> Void
 // Re-enable once all parser diagnostics in tests have been addressed.
 // https://github.com/realm/SwiftLint/issues/3348
-@TaskLocal package var parserDiagnosticsDisabledForTests = false
+package nonisolated(unsafe) var parserDiagnosticsDisabledForTests = false
 
 private let assertHandlerCache = Cache { (_: SwiftLintFile) -> AssertHandler? in nil }
 
 private final class Cache<T>: Sendable {
-    nonisolated(unsafe) private var values = [FileCacheKey: T]()
+    private nonisolated(unsafe) var values = [FileCacheKey: T]()
     private let factory: @Sendable (SwiftLintFile) -> T
     private let lock = PlatformLock()
 
@@ -127,9 +129,9 @@ extension SwiftLintFile {
         }
     }
 
-    public var parserDiagnostics: [String] {
+    public var parserDiagnostics: [String]? {
         if parserDiagnosticsDisabledForTests {
-            return []
+            return nil
         }
 
         return ParseDiagnosticsGenerator.diagnostics(for: syntaxTree)
@@ -173,12 +175,33 @@ extension SwiftLintFile {
 
     public var invalidCommands: [Command] { commandsCache.get(self).filter { !$0.isValid } }
 
+    public var regions: [Region] { regionsCache.get(self) }
+
+    public var syntaxTokensByLines: [[SwiftLintSyntaxToken]] {
+        guard let syntaxTokensByLines = syntaxTokensByLinesCache.get(self) else {
+            if let handler = assertHandler {
+                handler()
+                return []
+            }
+            queuedFatalError("Never call this for file that sourcekitd fails.")
+        }
+        return syntaxTokensByLines
+    }
+
+    public var syntaxKindsByLines: [[SourceKittenFramework.SyntaxKind]] {
+        guard let syntaxKindsByLines = syntaxKindsByLinesCache.get(self) else {
+            if let handler = assertHandler {
+                handler()
+                return []
+            }
+            queuedFatalError("Never call this for file that sourcekitd fails.")
+        }
+        return syntaxKindsByLines
+    }
+
     public var swiftSyntaxDerivedSourceKittenTokens: [SwiftLintSyntaxToken]? {
         swiftSyntaxTokensCache.get(self)
     }
-
-    public var commentLines: Set<Int> { commentLinesCache.get(self) }
-    public var emptyLines: Set<Int> { emptyLinesCache.get(self) }
 
     /// Invalidates all cached data for this file.
     public func invalidateCache() {
@@ -188,14 +211,15 @@ extension SwiftLintFile {
         structureDictionaryCache.invalidate(self)
         syntaxClassificationsCache.invalidate(self)
         syntaxMapCache.invalidate(self)
+        syntaxTokensByLinesCache.invalidate(self)
+        syntaxKindsByLinesCache.invalidate(self)
         swiftSyntaxTokensCache.invalidate(self)
         syntaxTreeCache.invalidate(self)
         foldedSyntaxTreeCache.invalidate(self)
         locationConverterCache.invalidate(self)
         commandsCache.invalidate(self)
+        regionsCache.invalidate(self)
         linesWithTokensCache.invalidate(self)
-        commentLinesCache.invalidate(self)
-        emptyLinesCache.invalidate(self)
     }
 
     package static func clearCaches() {
@@ -204,20 +228,21 @@ extension SwiftLintFile {
         structureDictionaryCache.clear()
         syntaxClassificationsCache.clear()
         syntaxMapCache.clear()
+        syntaxTokensByLinesCache.clear()
+        syntaxKindsByLinesCache.clear()
         swiftSyntaxTokensCache.clear()
         syntaxTreeCache.clear()
         foldedSyntaxTreeCache.clear()
         locationConverterCache.clear()
         commandsCache.clear()
+        regionsCache.clear()
         linesWithTokensCache.clear()
-        commentLinesCache.clear()
-        emptyLinesCache.clear()
     }
 }
 
 private final class PlatformLock: Sendable {
 #if canImport(Darwin)
-    nonisolated(unsafe) private let primitiveLock: UnsafeMutablePointer<os_unfair_lock>
+    private nonisolated(unsafe) let primitiveLock: UnsafeMutablePointer<os_unfair_lock>
 #else
     private let primitiveLock = NSLock()
 #endif
