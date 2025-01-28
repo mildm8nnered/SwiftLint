@@ -51,6 +51,8 @@ public struct Command: Equatable {
     public let ruleIdentifiers: Set<RuleIdentifier>
     /// The line in the source file where this command is defined.
     public let line: Int
+    /// The character offset within the line in the source file where this command starts.
+    public let start: Int?
     /// The character offset within the line in the source file where this command is defined.
     public let character: Int?
     /// This command's modifier, if any.
@@ -70,12 +72,14 @@ public struct Command: Equatable {
     public init(action: Action,
                 ruleIdentifiers: Set<RuleIdentifier> = [],
                 line: Int = 0,
+                start: Int? = nil,
                 character: Int? = nil,
                 modifier: Modifier? = nil,
                 trailingComment: String? = nil) {
         self.action = action
         self.ruleIdentifiers = ruleIdentifiers
         self.line = line
+        self.start = start
         self.character = character
         self.modifier = modifier
         self.trailingComment = trailingComment
@@ -87,19 +91,19 @@ public struct Command: Equatable {
     /// - parameter line:         The line in the source file where this command is defined.
     /// - parameter character:    The character offset within the line in the source file where this command is
     ///                           defined.
-    public init(actionString: String, line: Int, character: Int) {
-        let scanner = Scanner(string: actionString)
+    public init(commandString: String, line: Int, character: Int) {
+        let scanner = Scanner(string: commandString)
         _ = scanner.scanString("swiftlint:")
         // (enable|disable)(:previous|:this|:next)
         guard let actionAndModifierString = scanner.scanUpToString(" ") else {
-            self.init(action: .invalid, line: line, character: character)
+            self.init(action: .invalid, line: line, start: character - commandString.count, character: character)
             return
         }
         let actionAndModifierScanner = Scanner(string: actionAndModifierString)
         guard let actionString = actionAndModifierScanner.scanUpToString(":"),
               let action = Action(rawValue: actionString)
         else {
-            self.init(action: .invalid, line: line, character: character)
+            self.init(action: .invalid, line: line, start: character - commandString.count, character: character)
             return
         }
 
@@ -137,6 +141,7 @@ public struct Command: Equatable {
             action: action,
             ruleIdentifiers: ruleIdentifiers,
             line: line,
+            start: character - commandString.count,
             character: character,
             modifier: modifier,
             trailingComment: trailingComment

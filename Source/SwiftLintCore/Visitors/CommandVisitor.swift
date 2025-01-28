@@ -37,7 +37,7 @@ private extension Trivia {
 
                 let actionString = String(comment[lower...])
                 let end = locationConverter.location(for: offset + triviaOffset)
-                let command = Command(actionString: actionString, line: end.line, character: end.column)
+                let command = Command(commandString: actionString, line: end.line, character: end.column)
                 results.append(command)
             default:
                 break
