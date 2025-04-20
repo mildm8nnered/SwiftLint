@@ -46,10 +46,17 @@ internal extension Configuration {
                 resultingRules = allRulesWrapped.filter { tuple in
                     onlyRulesRuleIdentifiers.contains(type(of: tuple.rule).identifier)
                 }.map(\.rule)
+<<<<<<< HEAD
                 if !resultingRules.contains(where: { $0 is CustomRules }),
                    !customRulesIdentifiers.isDisjoint(with: onlyRulesRuleIdentifiers),
                    let customRules = allRulesWrapped.customRules {
                     resultingRules.append(customRules)
+=======
+                if !resultingRules.contains(where: { $0 is CustomRules }) {
+                    if customRulesIdentifiers.intersection(onlyRulesRuleIdentifiers).isNotEmpty, let customRules {
+                        resultingRules.append(customRules)
+                    }
+>>>>>>> cf431aeb0 (Tweaks)
                 }
 
             case var .defaultConfiguration(disabledRuleIdentifiers, optInRuleIdentifiers):
