@@ -88,7 +88,7 @@ extension Configuration {
                 configurationDictionary: dict,
                 ruleList: ruleList,
                 rulesMode: rulesMode,
-                customRuleIdentifiers: Set(allRulesWrapped.customRules?.customRuleIdentifiers ?? [])
+                allRulesWrapped: allRulesWrapped
             )
         }
 
@@ -169,12 +169,12 @@ extension Configuration {
         configurationDictionary dict: [String: Any],
         ruleList: RuleList,
         rulesMode: RulesMode,
-        customRuleIdentifiers: Set<String>
+        allRulesWrapped: [ConfigurationRuleWrapper]
     ) {
         for key in dict.keys where !validGlobalKeys.contains(key) {
             guard let identifier = ruleList.identifier(for: key),
-                  let ruleType = ruleList.list[identifier] else {
-                continue
+                let ruleType = ruleList.list[identifier] else {
+                    continue
             }
 
             switch rulesMode {
@@ -184,7 +184,7 @@ extension Configuration {
                 let issue = validateConfiguredRuleIsEnabled(
                     onlyRules: onlyRules,
                     ruleType: ruleType,
-                    customRuleIdentifiers: customRuleIdentifiers
+                    allRulesWrapped: allRulesWrapped
                 )
                 issue?.print()
             case let .defaultConfiguration(disabled: disabledRules, optIn: optInRules):
@@ -236,10 +236,12 @@ extension Configuration {
     static func validateConfiguredRuleIsEnabled(
         onlyRules: Set<String>,
         ruleType: any Rule.Type,
-        customRuleIdentifiers: Set<String> = []
+        allRulesWrapped: [ConfigurationRuleWrapper]
     ) -> Issue? {
         if onlyRules.isDisjoint(with: ruleType.description.allIdentifiers) {
-            if ruleType is CustomRules.Type, !customRuleIdentifiers.isDisjoint(with: onlyRules) {
+            if ruleType is CustomRules.Type,
+               let customRules = (allRulesWrapped.first { $0.rule is CustomRules })?.rule as? CustomRules,
+               !Set(customRules.customRuleIdentifiers).intersection(onlyRules).isEmpty {
                 return nil
             }
             return Issue.ruleNotPresentInOnlyRules(ruleID: ruleType.identifier)
