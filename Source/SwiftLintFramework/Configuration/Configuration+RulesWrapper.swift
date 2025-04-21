@@ -11,13 +11,16 @@ internal extension Configuration {
         private let aliasResolver: (String) -> String
 
         private var invalidRuleIdsWarnedAbout: Set<String> = []
-        private var customRulesIdentifiers: Set<String> {
-            Set(allRulesWrapped.customRules?.customRuleIdentifiers ?? [])
-        }
-        private var validRuleIdentifiers: Set<String> {
+        private lazy var customRules: CustomRules? = {
+            allRulesWrapped.customRules
+        }()
+        private lazy var customRulesIdentifiers: Set<String> = {
+            Set(customRules?.customRuleIdentifiers ?? [])
+        }()
+        private lazy var validRuleIdentifiers: Set<String> = {
             let regularRuleIdentifiers = allRulesWrapped.map { type(of: $0.rule).identifier }
             return Set(regularRuleIdentifiers + customRulesIdentifiers)
-        }
+        }()
 
         private var cachedResultingRules: [any Rule]?
         private let resultingRulesLock = NSLock()
@@ -46,17 +49,10 @@ internal extension Configuration {
                 resultingRules = allRulesWrapped.filter { tuple in
                     onlyRulesRuleIdentifiers.contains(type(of: tuple.rule).identifier)
                 }.map(\.rule)
-<<<<<<< HEAD
-                if !resultingRules.contains(where: { $0 is CustomRules }),
-                   !customRulesIdentifiers.isDisjoint(with: onlyRulesRuleIdentifiers),
-                   let customRules = allRulesWrapped.customRules {
-                    resultingRules.append(customRules)
-=======
                 if !resultingRules.contains(where: { $0 is CustomRules }) {
                     if customRulesIdentifiers.intersection(onlyRulesRuleIdentifiers).isNotEmpty, let customRules {
                         resultingRules.append(customRules)
                     }
->>>>>>> cf431aeb0 (Tweaks)
                 }
 
             case var .defaultConfiguration(disabledRuleIdentifiers, optInRuleIdentifiers):
@@ -213,7 +209,7 @@ internal extension Configuration {
             newAllRulesWrapped: [ConfigurationRuleWrapper], with child: RulesWrapper
         ) -> [ConfigurationRuleWrapper] {
             guard
-                let parentCustomRulesRule = allRulesWrapped.customRules,
+                let parentCustomRulesRule = customRules,
                 let childCustomRulesRule = child.allRulesWrapped.customRules
             else {
                 // Merging is only needed if both parent & child have a custom rules rule
