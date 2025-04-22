@@ -32,7 +32,8 @@ extension Configuration {
     /// Creates a Configuration value based on the specified parameters.
     ///
     /// - parameter parentConfiguration:       The parent configuration, if any.
-    /// - parameter dict:                      The untyped dictionary to serve as the input for this typed configuration.
+    /// - parameter dict:                      The untyped dictionary to serve as the input for this typed
+    ///                                        configuration.
     ///                                        Typically generated from a YAML-formatted file.
     /// - parameter ruleList:                  The list of rules to be available to this configuration.
     /// - parameter enableAllRulesCommandLine: Whether all rules from `ruleList` should be enabled, regardless of the
