@@ -41,7 +41,7 @@ extension SwiftLint {
                 cachePath: nil,
                 ignoreCache: true,
                 enableAllRules: false,
-                onlyRule: common.onlyRule,
+                onlyRuleCommandLine: common.onlyRuleCommandLine,
                 autocorrect: common.fix,
                 format: common.format,
                 compilerLogPath: compilerLogPath,

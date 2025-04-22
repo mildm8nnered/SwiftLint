@@ -50,7 +50,7 @@ package struct LintOrAnalyzeOptions {
     let cachePath: String?
     let ignoreCache: Bool
     let enableAllRules: Bool
-    let onlyRule: [String]
+    let onlyRuleCommandLine: [String]
     let autocorrect: Bool
     let format: Bool
     let compilerLogPath: String?
@@ -78,7 +78,7 @@ package struct LintOrAnalyzeOptions {
                  cachePath: String?,
                  ignoreCache: Bool,
                  enableAllRules: Bool,
-                 onlyRule: [String],
+                 onlyRuleCommandLine: [String],
                  autocorrect: Bool,
                  format: Bool,
                  compilerLogPath: String?,
@@ -105,7 +105,7 @@ package struct LintOrAnalyzeOptions {
         self.cachePath = cachePath
         self.ignoreCache = ignoreCache
         self.enableAllRules = enableAllRules
-        self.onlyRule = onlyRule
+        self.onlyRuleCommandLine = onlyRuleCommandLine
         self.autocorrect = autocorrect
         self.format = format
         self.compilerLogPath = compilerLogPath

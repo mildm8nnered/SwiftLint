@@ -92,7 +92,7 @@ final class ConfigurationTests: SwiftLintTestCase {
     func testOnlyRule() throws {
         let configuration = try Configuration(
             dict: [:],
-            onlyRule: ["nesting"],
+            onlyRuleCommandLine: ["nesting"],
             cachePath: nil
         )
 
@@ -103,7 +103,7 @@ final class ConfigurationTests: SwiftLintTestCase {
         let onlyRuleIdentifiers = ["nesting", "todo"].sorted()
         let configuration = try Configuration(
             dict: ["only_rules": "line_length"],
-            onlyRule: onlyRuleIdentifiers,
+            onlyRuleCommandLine: onlyRuleIdentifiers,
             cachePath: nil
         )
         XCTAssertEqual(onlyRuleIdentifiers, configuration.enabledRuleIdentifiers)
@@ -158,7 +158,7 @@ final class ConfigurationTests: SwiftLintTestCase {
                 "only_rules": only,
                 "custom_rules": customRules,
             ],
-            onlyRule: [customRuleIdentifier]
+            onlyRuleCommandLine: [customRuleIdentifier]
         )
         guard let resultingCustomRules = config.rules.first(where: { $0 is CustomRules }) as? CustomRules
         else {

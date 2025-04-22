@@ -41,7 +41,7 @@ package extension Configuration {
         // MARK: - Methods
         internal mutating func resultingConfiguration(
             enableAllRules: Bool,
-            onlyRule: [String],
+            onlyRuleCommandLine: [String],
             cachePath: String?
         ) throws -> Configuration {
             // Build if needed
@@ -52,7 +52,7 @@ package extension Configuration {
             return try merged(
                 configurationData: try validate(),
                 enableAllRules: enableAllRules,
-                onlyRule: onlyRule,
+                onlyRuleCommandLine: onlyRuleCommandLine,
                 cachePath: cachePath
             )
         }
@@ -250,7 +250,7 @@ package extension Configuration {
         private func merged(
             configurationData: [(configurationDict: [String: Any], rootDirectory: String)],
             enableAllRules: Bool,
-            onlyRule: [String],
+            onlyRuleCommandLine: [String],
             cachePath: String?
         ) throws -> Configuration {
             // Split into first & remainder; use empty dict for first if the array is empty
@@ -261,7 +261,7 @@ package extension Configuration {
             var firstConfiguration = try Configuration(
                 dict: firstConfigurationData.configurationDict,
                 enableAllRules: enableAllRules,
-                onlyRule: onlyRule,
+                onlyRuleCommandLine: onlyRuleCommandLine,
                 cachePath: cachePath
             )
 
@@ -280,7 +280,7 @@ package extension Configuration {
                     parentConfiguration: $0,
                     dict: $1.configurationDict,
                     enableAllRules: enableAllRules,
-                    onlyRule: onlyRule,
+                    onlyRuleCommandLine: onlyRuleCommandLine,
                     cachePath: cachePath
                 )
                 childConfiguration.fileGraph = Self(rootDirectory: $1.rootDirectory)

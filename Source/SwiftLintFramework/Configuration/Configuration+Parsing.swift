@@ -43,7 +43,7 @@ extension Configuration {
         dict: [String: Any],
         ruleList: RuleList = RuleRegistry.shared.list,
         enableAllRules: Bool = false,
-        onlyRule: [String] = [],
+        onlyRuleCommandLine: [String] = [],
         cachePath: String? = nil
     ) throws {
         func defaultStringArray(_ object: Any?) -> [String] { [String].array(of: object) ?? [] }
@@ -75,14 +75,14 @@ extension Configuration {
 
         let rulesMode = try RulesMode(
             enableAllRules: enableAllRules,
-            onlyRule: onlyRule,
+            onlyRuleCommandLine: onlyRuleCommandLine,
             onlyRules: onlyRules,
             optInRules: optInRules,
             disabledRules: disabledRules,
             analyzerRules: analyzerRules
         )
 
-        if onlyRule.isEmpty {
+        if onlyRuleCommandLine.isEmpty {
             Self.validateConfiguredRulesAreEnabled(
                 parentConfiguration: parentConfiguration,
                 configurationDictionary: dict,
