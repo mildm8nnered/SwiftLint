@@ -7,33 +7,19 @@ struct CustomRulesConfiguration: RuleConfiguration, CacheDescriptionProvider {
 
     var parameterDescription: RuleConfigurationDescription? { RuleConfigurationOption.noOptions }
     var cacheDescription: String {
-        let configsDescription = customRuleConfigurations
+        customRuleConfigurations
             .sorted { $0.identifier < $1.identifier }
             .map(\.cacheDescription)
             .joined(separator: "\n")
-
-        if let defaultMode = defaultExecutionMode {
-            return "default_execution_mode:\(defaultMode.rawValue)\n\(configsDescription)"
-        }
-        return configsDescription
     }
     var customRuleConfigurations = [RegexConfiguration<Parent>]()
-    var defaultExecutionMode: RegexConfiguration<Parent>.ExecutionMode?
 
     mutating func apply(configuration: Any) throws {
         guard let configurationDict = configuration as? [String: Any] else {
             throw Issue.invalidConfiguration(ruleID: Parent.identifier)
         }
 
-        // Parse default execution mode if present
-        if let defaultModeString = configurationDict["default_execution_mode"] as? String {
-            guard let mode = RegexConfiguration<Parent>.ExecutionMode(rawValue: defaultModeString) else {
-                throw Issue.invalidConfiguration(ruleID: Parent.identifier)
-            }
-            defaultExecutionMode = mode
-        }
-
-        for (key, value) in configurationDict where key != "default_execution_mode" {
+        for (key, value) in configurationDict {
             var ruleConfiguration = RegexConfiguration<Parent>(identifier: key)
 
             do {
@@ -45,14 +31,15 @@ struct CustomRulesConfiguration: RuleConfiguration, CacheDescriptionProvider {
 
             customRuleConfigurations.append(ruleConfiguration)
         }
-        customRuleConfigurations.sort { $0.identifier < $1.identifier }
+        customRuleConfigurations.sort { first, second in
+            first.identifier < second.identifier
+        }
     }
 }
 
 // MARK: - CustomRules
 
-@DisabledWithoutSourceKit
-struct CustomRules: Rule, CacheDescriptionProvider, ConditionallySourceKitFree {
+struct CustomRules: Rule, CacheDescriptionProvider {
     var cacheDescription: String {
         configuration.cacheDescription
     }
@@ -66,22 +53,11 @@ struct CustomRules: Rule, CacheDescriptionProvider, ConditionallySourceKitFree {
         name: "Custom Rules",
         description: """
             Create custom rules by providing a regex string. Optionally specify what syntax kinds to match against, \
-            the severity level, and what message to display. Rules default to SwiftSyntax mode for improved \
-            performance. Use `execution_mode: sourcekit` or `default_execution_mode: sourcekit` for SourceKit mode.
+            the severity level, and what message to display.
             """,
         kind: .style)
 
     var configuration = CustomRulesConfiguration()
-
-    /// Returns true if all configured custom rules use SwiftSyntax mode, making this rule effectively SourceKit-free.
-    var isEffectivelySourceKitFree: Bool {
-        configuration.customRuleConfigurations.allSatisfy { config in
-            let effectiveMode = config.executionMode == .default
-                ? (configuration.defaultExecutionMode ?? .sourcekit)
-                : config.executionMode
-            return effectiveMode == .swiftsyntax
-        }
-    }
 
     func validate(file: SwiftLintFile) -> [StyleViolation] {
         var configurations = configuration.customRuleConfigurations
