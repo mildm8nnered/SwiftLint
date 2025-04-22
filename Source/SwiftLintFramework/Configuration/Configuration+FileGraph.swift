@@ -40,7 +40,7 @@ package extension Configuration {
 
         // MARK: - Methods
         internal mutating func resultingConfiguration(
-            enableAllRules: Bool,
+            enableAllRulesCommandLine: Bool,
             onlyRuleCommandLine: [String],
             cachePath: String?
         ) throws -> Configuration {
@@ -51,7 +51,7 @@ package extension Configuration {
 
             return try merged(
                 configurationData: try validate(),
-                enableAllRules: enableAllRules,
+                enableAllRulesCommandLine: enableAllRulesCommandLine,
                 onlyRuleCommandLine: onlyRuleCommandLine,
                 cachePath: cachePath
             )
@@ -249,7 +249,7 @@ package extension Configuration {
         // MARK: Merging
         private func merged(
             configurationData: [(configurationDict: [String: Any], rootDirectory: String)],
-            enableAllRules: Bool,
+            enableAllRulesCommandLine: Bool,
             onlyRuleCommandLine: [String],
             cachePath: String?
         ) throws -> Configuration {
@@ -260,7 +260,7 @@ package extension Configuration {
             // Build first configuration
             var firstConfiguration = try Configuration(
                 dict: firstConfigurationData.configurationDict,
-                enableAllRules: enableAllRules,
+                enableAllRulesCommandLine: enableAllRulesCommandLine,
                 onlyRuleCommandLine: onlyRuleCommandLine,
                 cachePath: cachePath
             )
@@ -279,7 +279,7 @@ package extension Configuration {
                 var childConfiguration = try Configuration(
                     parentConfiguration: $0,
                     dict: $1.configurationDict,
-                    enableAllRules: enableAllRules,
+                    enableAllRulesCommandLine: enableAllRulesCommandLine,
                     onlyRuleCommandLine: onlyRuleCommandLine,
                     cachePath: cachePath
                 )

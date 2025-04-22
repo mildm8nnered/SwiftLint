@@ -34,7 +34,7 @@ public extension Configuration {
         case allCommandLine
 
         internal init(
-            enableAllRules: Bool,
+            enableAllRulesCommandLine: Bool,
             onlyRuleCommandLine: [String],
             onlyRules: [String],
             optInRules: [String],
@@ -51,7 +51,7 @@ public extension Configuration {
                 }
             }
 
-            if enableAllRules {
+            if enableAllRulesCommandLine {
                 self = .allCommandLine
             } else if onlyRuleCommandLine.isNotEmpty {
                 self = .onlyCommandLine(Set(onlyRuleCommandLine))

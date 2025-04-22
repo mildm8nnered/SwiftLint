@@ -17,8 +17,11 @@ extension SwiftLint {
         var cachePath: String?
         @Flag(help: "Ignore cache when linting.")
         var noCache = false
-        @Flag(help: "Run all rules, even opt-in and disabled ones, ignoring `only_rules`.")
-        var enableAllRules = false
+        @Flag(
+            name: [.customLong("enableAllRules")],
+            help: "Run all rules, even opt-in and disabled ones, ignoring `only_rules`."
+        )
+        var enableAllRulesCommandLine = false
         @Argument(help: pathsArgumentDescription(for: .lint))
         var paths = [String]()
 
@@ -52,7 +55,7 @@ extension SwiftLint {
                 progress: common.progress,
                 cachePath: cachePath,
                 ignoreCache: noCache,
-                enableAllRules: enableAllRules,
+                enableAllRulesCommandLine: enableAllRulesCommandLine,
                 onlyRuleCommandLine: common.onlyRuleCommandLine,
                 autocorrect: common.fix,
                 format: common.format,

@@ -40,7 +40,7 @@ extension SwiftLint {
                 progress: common.progress,
                 cachePath: nil,
                 ignoreCache: true,
-                enableAllRules: false,
+                enableAllRulesCommandLine: false,
                 onlyRuleCommandLine: common.onlyRuleCommandLine,
                 autocorrect: common.fix,
                 format: common.format,

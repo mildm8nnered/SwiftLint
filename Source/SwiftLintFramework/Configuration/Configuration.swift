@@ -209,7 +209,7 @@ public struct Configuration {
     ///
     /// - parameter configurationFiles:         The path on disk to one or multiple configuration files. If this array
     ///                                         is empty, the default `.swiftlint.yml` file will be used.
-    /// - parameter enableAllRules:             Enable all available rules.
+    /// - parameter enableAllRulesCommandLine:  Enable all available rules.
     /// - parameter cachePath:                  The location of the persisted cache to use whith this configuration.
     /// - parameter ignoreParentAndChildConfigs:If `true`, child and parent config references will be ignored.
     /// - parameter mockedNetworkResults:       For testing purposes only. Instead of loading the specified urls,
@@ -218,7 +218,7 @@ public struct Configuration {
     ///                                         This is only intended for tests checking whether invalid configs fail.
     public init(
         configurationFiles: [String], // No default value here to avoid ambiguous Configuration() initializer
-        enableAllRules: Bool = false,
+        enableAllRulesCommandLine: Bool = false,
         onlyRuleCommandLine: [String] = [],
         cachePath: String? = nil,
         ignoreParentAndChildConfigs: Bool = false,
@@ -239,7 +239,7 @@ public struct Configuration {
         defer { basedOnCustomConfigurationFiles = hasCustomConfigurationFiles }
 
         let currentWorkingDirectory = FileManager.default.currentDirectoryPath.bridge().absolutePathStandardized()
-        let rulesMode: RulesMode = if enableAllRules {
+        let rulesMode: RulesMode = if enableAllRulesCommandLine {
             .allCommandLine
         } else if onlyRuleCommandLine.isNotEmpty {
             .onlyCommandLine(Set(onlyRuleCommandLine))
@@ -262,7 +262,7 @@ public struct Configuration {
                 ignoreParentAndChildConfigs: ignoreParentAndChildConfigs
             )
             let resultingConfiguration = try fileGraph.resultingConfiguration(
-                enableAllRules: enableAllRules,
+                enableAllRulesCommandLine: enableAllRulesCommandLine,
                 onlyRuleCommandLine: onlyRuleCommandLine,
                 cachePath: cachePath
             )

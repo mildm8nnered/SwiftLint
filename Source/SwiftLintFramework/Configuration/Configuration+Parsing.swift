@@ -31,18 +31,18 @@ extension Configuration {
     // MARK: - Initializers
     /// Creates a Configuration value based on the specified parameters.
     ///
-    /// - parameter parentConfiguration:    The parent configuration, if any.
-    /// - parameter dict:                   The untyped dictionary to serve as the input for this typed configuration.
-    ///                                     Typically generated from a YAML-formatted file.
-    /// - parameter ruleList:               The list of rules to be available to this configuration.
-    /// - parameter enableAllRules:         Whether all rules from `ruleList` should be enabled, regardless of the
-    ///                                     settings in `dict`.
-    /// - parameter cachePath:              The location of the persisted cache on disk.
+    /// - parameter parentConfiguration:       The parent configuration, if any.
+    /// - parameter dict:                      The untyped dictionary to serve as the input for this typed configuration.
+    ///                                        Typically generated from a YAML-formatted file.
+    /// - parameter ruleList:                  The list of rules to be available to this configuration.
+    /// - parameter enableAllRulesCommandLine: Whether all rules from `ruleList` should be enabled, regardless of the
+    ///                                        settings in `dict`.
+    /// - parameter cachePath:                 The location of the persisted cache on disk.
     public init(
         parentConfiguration: Configuration? = nil,
         dict: [String: Any],
         ruleList: RuleList = RuleRegistry.shared.list,
-        enableAllRules: Bool = false,
+        enableAllRulesCommandLine: Bool = false,
         onlyRuleCommandLine: [String] = [],
         cachePath: String? = nil
     ) throws {
@@ -74,7 +74,7 @@ extension Configuration {
         }
 
         let rulesMode = try RulesMode(
-            enableAllRules: enableAllRules,
+            enableAllRulesCommandLine: enableAllRulesCommandLine,
             onlyRuleCommandLine: onlyRuleCommandLine,
             onlyRules: onlyRules,
             optInRules: optInRules,

@@ -82,7 +82,7 @@ final class ConfigurationTests: SwiftLintTestCase {
     func testEnableAllRulesConfiguration() throws {
         let configuration = try Configuration(
             dict: [:],
-            enableAllRules: true,
+            enableAllRulesCommandLine: true,
             cachePath: nil
         )
 

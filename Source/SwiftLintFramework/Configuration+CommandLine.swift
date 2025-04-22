@@ -298,7 +298,7 @@ extension Configuration {
     init(options: LintOrAnalyzeOptions) {
         self.init(
             configurationFiles: options.configurationFiles,
-            enableAllRules: options.enableAllRules,
+            enableAllRulesCommandLine: options.enableAllRulesCommandLine,
             onlyRuleCommandLine: options.onlyRuleCommandLine,
             cachePath: options.cachePath
         )
