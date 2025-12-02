@@ -3,6 +3,7 @@ import Darwin
 #endif
 import Foundation
 import SourceKittenFramework
+import SwiftDiagnostics
 import SwiftIDEUtils
 import SwiftOperators
 import SwiftParser
@@ -49,23 +50,26 @@ private let syntaxMapCache = Cache { file in
     responseCache.get(file).map { SwiftLintSyntaxMap(value: SyntaxMap(sourceKitResponse: $0)) }
 }
 private let syntaxClassificationsCache = Cache { $0.syntaxTree.classifications }
-private let syntaxKindsByLinesCache = Cache { $0.syntaxKindsByLine() }
-private let syntaxTokensByLinesCache = Cache { $0.syntaxTokensByLine() }
+private let syntaxKindsByLinesCache = Cache { $0.syntaxKindsByLines }
+private let syntaxTokensByLinesCache = Cache { $0.syntaxTokensByLines }
 private let linesWithTokensCache = Cache { $0.computeLinesWithTokens() }
 private let swiftSyntaxTokensCache = Cache { file -> [SwiftLintSyntaxToken]? in
     // Use SwiftSyntaxKindBridge to derive SourceKitten-compatible tokens from SwiftSyntax
     SwiftSyntaxKindBridge.sourceKittenSyntaxKinds(for: file)
 }
 
+private let commentLinesCache = Cache { CommentLinesVisitor.commentLines(in: $0) }
+private let emptyLinesCache = Cache { EmptyLinesVisitor.emptyLines(in: $0) }
+
 package typealias AssertHandler = () -> Void
 // Re-enable once all parser diagnostics in tests have been addressed.
 // https://github.com/realm/SwiftLint/issues/3348
-package nonisolated(unsafe) var parserDiagnosticsDisabledForTests = false
+@TaskLocal package var parserDiagnosticsDisabledForTests = false
 
 private let assertHandlerCache = Cache { (_: SwiftLintFile) -> AssertHandler? in nil }
 
 private final class Cache<T>: Sendable {
-    private nonisolated(unsafe) var values = [FileCacheKey: T]()
+    nonisolated(unsafe) private var values = [FileCacheKey: T]()
     private let factory: @Sendable (SwiftLintFile) -> T
     private let lock = PlatformLock()
 
@@ -129,9 +133,9 @@ extension SwiftLintFile {
         }
     }
 
-    public var parserDiagnostics: [String]? {
+    public var parserDiagnostics: [String] {
         if parserDiagnosticsDisabledForTests {
-            return nil
+            return []
         }
 
         return ParseDiagnosticsGenerator.diagnostics(for: syntaxTree)
@@ -202,6 +206,9 @@ extension SwiftLintFile {
     public var swiftSyntaxDerivedSourceKittenTokens: [SwiftLintSyntaxToken]? {
         swiftSyntaxTokensCache.get(self)
     }
+
+    public var commentLines: Set<Int> { commentLinesCache.get(self) }
+    public var emptyLines: Set<Int> { emptyLinesCache.get(self) }
 
     /// Invalidates all cached data for this file.
     public func invalidateCache() {
