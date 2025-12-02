@@ -1,6 +1,7 @@
 @testable import SwiftLintBuiltInRules
 @testable import SwiftLintCore
 @testable import SwiftLintFramework
+import TestHelpers
 import XCTest
 
 final class CoverageTests: SwiftLintTestCase {

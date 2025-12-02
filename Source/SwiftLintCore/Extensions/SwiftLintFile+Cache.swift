@@ -224,7 +224,7 @@ extension SwiftLintFile {
 
 private final class PlatformLock: Sendable {
 #if canImport(Darwin)
-    private nonisolated(unsafe) let primitiveLock: UnsafeMutablePointer<os_unfair_lock>
+    nonisolated(unsafe) private let primitiveLock: UnsafeMutablePointer<os_unfair_lock>
 #else
     private let primitiveLock = NSLock()
 #endif

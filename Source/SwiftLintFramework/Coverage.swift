@@ -119,7 +119,7 @@ private extension Region {
             return numberOfLinesInRegion * rules.numberOfRulesIncludingCustomRules
         }
 
-        let disabledRuleIdentifiers = Set(disabledRuleIdentifiers.map { $0.stringRepresentation })
+        let disabledRuleIdentifiers = Set(disabledRuleIdentifiers.map(\.stringRepresentation))
         let numberOfDisabledRules: Int = if disabledRuleIdentifiers.contains(CustomRules.identifier) {
             disabledRuleIdentifiers.subtracting(
                 Set(rules.customRuleIdentifiers + [CustomRules.identifier])
