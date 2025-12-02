@@ -310,3 +310,9 @@ internal extension Configuration {
         }
     }
 }
+
+extension [ConfigurationRuleWrapper] {
+    var customRules: CustomRules? {
+        first { $0.rule is CustomRules }?.rule as? CustomRules
+    }
+}
