@@ -200,6 +200,8 @@ extension SwiftLintFile {
         commandsCache.invalidate(self)
         regionsCache.invalidate(self)
         linesWithTokensCache.invalidate(self)
+        commentLinesCache.invalidate(self)
+        emptyLinesCache.invalidate(self)
     }
 
     package static func clearCaches() {
@@ -215,6 +217,8 @@ extension SwiftLintFile {
         commandsCache.clear()
         regionsCache.clear()
         linesWithTokensCache.clear()
+        commentLinesCache.clear()
+        emptyLinesCache.clear()
     }
 }
 
